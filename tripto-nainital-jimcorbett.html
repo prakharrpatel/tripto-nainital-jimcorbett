@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Gallery • Nainital & Jim Corbett</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        notion: {
+                            light: '#FFFFFF',
+                            bg: '#F7F6F3',
+                            sidebar: '#F1F0EC',
+                            text: '#37352F',
+                            muted: '#787774',
+                            border: '#EBECED',
+                            hover: '#EFEFEF',
+                            darkBg: '#191919',
+                            darkSidebar: '#202020',
+                            darkCard: '#252525',
+                            darkText: '#D4D4D4',
+                            darkMuted: '#9B9B9B',
+                            darkBorder: '#2F2F2F',
+                            darkHover: '#2C2C2C'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Notion Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D3D1CB;
+            border-radius: 4px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #3F3F3F;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #AEAC9F;
+        }
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #555555;
+        }
+
+        /* Card transition effects */
+        .notion-card {
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .notion-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(15, 15, 15, 0.06);
+        }
+        .dark .notion-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-notion-bg dark:bg-notion-darkBg text-notion-text dark:text-notion-darkText min-h-screen flex flex-col font-sans antialiased transition-colors duration-200">
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-30 bg-notion-light/90 dark:bg-notion-darkBg/90 backdrop-blur-md border-b border-notion-border dark:border-notion-darkBorder px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <button id="sidebar-toggle" class="p-1.5 hover:bg-notion-hover dark:hover:bg-notion-darkHover rounded-md text-notion-muted dark:text-notion-darkMuted transition-colors">
+                <i data-lucide="panel-left-open" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-center space-x-2">
+                <span class="text-xl">🏔️</span>
+                <span class="font-semibold text-sm tracking-tight">Trip Gallery • Nainital & Jim Corbett</span>
+            </div>
+        </div>
+
+        <!-- Header Actions -->
+        <div class="flex items-center space-x-2">
+            <!-- Search Input -->
+            <div class="relative hidden sm:block w-48 lg:w-64">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-notion-muted dark:text-notion-darkMuted"></i>
+                <input type="text" id="search-input" placeholder="Search gallery..." class="w-full text-xs pl-8 pr-3 py-1.5 bg-notion-bg dark:bg-notion-darkCard border border-notion-border dark:border-notion-darkBorder rounded-md focus:outline-none focus:ring-1 focus:ring-notion-muted/50 dark:focus:ring-notion-darkMuted/50">
+            </div>
+
+            <!-- GitHub Repository Link -->
+            <a href="https://github.com/prakharrpatel/tripto-nainital-jimcorbett" target="_blank" rel="noopener noreferrer" title="View Repository on GitHub" class="flex items-center space-x-1.5 px-3 py-1.5 text-xs font-medium bg-notion-sidebar dark:bg-notion-darkSidebar hover:bg-notion-hover dark:hover:bg-notion-darkHover border border-notion-border dark:border-notion-darkBorder rounded-md transition-colors">
+                <i data-lucide="github" class="w-3.5 h-3.5"></i>
+                <span class="hidden md:inline">GitHub Repo</span>
+            </a>
+
+            <!-- Refresh Button -->
+            <button id="refresh-btn" title="Reload contents" class="p-1.5 hover:bg-notion-hover dark:hover:bg-notion-darkHover rounded-md text-notion-muted dark:text-notion-darkMuted transition-colors">
+                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Dark Mode Toggle -->
+            <button id="theme-toggle" title="Toggle dark mode" class="p-1.5 hover:bg-notion-hover dark:hover:bg-notion-darkHover rounded-md text-notion-muted dark:text-notion-darkMuted transition-colors">
+                <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
+                <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Workspace Layout -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="w-64 bg-notion-sidebar dark:bg-notion-darkSidebar border-r border-notion-border dark:border-notion-darkBorder flex-shrink-0 p-3 flex flex-col justify-between transition-all duration-300">
+            <div class="space-y-4">
+                <div class="px-2 py-1">
+                    <p class="text-[11px] font-semibold uppercase tracking-wider text-notion-muted dark:text-notion-darkMuted mb-2">Filter Media</p>
+                    <nav class="space-y-1">
+                        <button data-filter="all" class="filter-btn w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs font-medium bg-notion-hover dark:bg-notion-darkHover text-notion-text dark:text-notion-darkText">
+                            <span class="flex items-center space-x-2">
+                                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                                <span>All Media</span>
+                            </span>
+                            <span id="count-all" class="text-[10px] bg-notion-border dark:bg-notion-darkBorder px-2 py-0.5 rounded-md">0</span>
+                        </button>
+
+                        <button data-filter="images" class="filter-btn w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs font-medium text-notion-muted dark:text-notion-darkMuted hover:bg-notion-hover dark:hover:bg-notion-darkHover hover:text-notion-text dark:hover:text-notion-darkText">
+                            <span class="flex items-center space-x-2">
+                                <i data-lucide="image" class="w-4 h-4"></i>
+                                <span>Photos</span>
+                            </span>
+                            <span id="count-images" class="text-[10px] bg-notion-border dark:bg-notion-darkBorder px-2 py-0.5 rounded-md">0</span>
+                        </button>
+
+                        <button data-filter="videos" class="filter-btn w-full flex items-center justify-between px-3 py-1.5 rounded-md text-xs font-medium text-notion-muted dark:text-notion-darkMuted hover:bg-notion-hover dark:hover:bg-notion-darkHover hover:text-notion-text dark:hover:text-notion-darkText">
+                            <span class="flex items-center space-x-2">
+                                <i data-lucide="video" class="w-4 h-4"></i>
+                                <span>Videos</span>
+                            </span>
+                            <span id="count-videos" class="text-[10px] bg-notion-border dark:bg-notion-darkBorder px-2 py-0.5 rounded-md">0</span>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- Repository Sync Status -->
+            <div class="border-t border-notion-border dark:border-notion-darkBorder pt-3 px-2">
+                <div class="flex items-center justify-between text-[11px] text-notion-muted dark:text-notion-darkMuted">
+                    <span class="flex items-center space-x-1.5">
+                        <span id="sync-indicator" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="sync-text">GitHub Sync</span>
+                    </span>
+                    <span id="last-sync-time">Just now</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6">
+            
+            <!-- Page Header -->
+            <div class="flex items-center justify-between border-b border-notion-border dark:border-notion-darkBorder pb-4">
+                <h1 class="text-xl md:text-2xl font-bold tracking-tight">Trip Gallery • Nainital & Jim Corbett</h1>
+                
+                <!-- View Switcher -->
+                <div class="flex items-center bg-notion-sidebar dark:bg-notion-darkSidebar p-1 rounded-md border border-notion-border dark:border-notion-darkBorder text-xs">
+                    <button id="view-grid" title="Grid View" class="view-btn px-2.5 py-1 rounded-md bg-notion-light dark:bg-notion-darkCard shadow-xs text-notion-text dark:text-notion-darkText">
+                        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                    </button>
+                    <button id="view-feed" title="Feed Scroll" class="view-btn px-2.5 py-1 rounded-md text-notion-muted dark:text-notion-darkMuted hover:text-notion-text">
+                        <i data-lucide="rows-3" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loader State -->
+            <div id="loader" class="flex flex-col items-center justify-center py-24 space-y-3">
+                <div class="w-7 h-7 border-2 border-notion-muted/30 border-t-notion-text dark:border-notion-darkMuted/30 dark:border-t-notion-darkText rounded-full animate-spin"></div>
+                <p class="text-xs text-notion-muted dark:text-notion-darkMuted">Fetching media from repository...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden flex flex-col items-center justify-center py-20 text-center space-y-3">
+                <i data-lucide="folder-open" class="w-10 h-10 text-notion-muted dark:text-notion-darkMuted"></i>
+                <p class="text-sm font-medium">No media items found</p>
+                <button id="clear-search" class="text-xs text-blue-500 hover:underline">Clear search or filters</button>
+            </div>
+
+            <!-- Media Container Grid View -->
+            <div id="gallery-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Square cards dynamically rendered here -->
+            </div>
+
+            <!-- Media Container Feed View -->
+            <div id="gallery-feed" class="hidden max-w-xl mx-auto space-y-6">
+                <!-- Feed Cards dynamically rendered here -->
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <button id="lightbox-close" class="absolute top-4 right-4 p-2 text-white/70 hover:text-white rounded-md bg-white/10 hover:bg-white/20 transition-colors">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+
+        <button id="lightbox-prev" class="absolute left-4 p-3 text-white/70 hover:text-white rounded-md bg-white/10 hover:bg-white/20 transition-colors">
+            <i data-lucide="chevron-left" class="w-6 h-6"></i>
+        </button>
+        <button id="lightbox-next" class="absolute right-4 p-3 text-white/70 hover:text-white rounded-md bg-white/10 hover:bg-white/20 transition-colors">
+            <i data-lucide="chevron-right" class="w-6 h-6"></i>
+        </button>
+
+        <div class="max-w-4xl max-h-[85vh] flex flex-col items-center justify-center w-full">
+            <div id="lightbox-media-container" class="relative max-h-[75vh] w-full flex items-center justify-center"></div>
+
+            <div class="mt-4 flex flex-wrap items-center justify-between w-full max-w-xl bg-notion-darkCard/90 border border-notion-darkBorder px-5 py-2.5 rounded-md text-white">
+                <div class="flex items-center space-x-2">
+                    <span id="lightbox-title" class="text-xs font-medium truncate max-w-[200px] sm:max-w-xs">Filename.jpg</span>
+                    <span id="lightbox-badge" class="text-[10px] px-2 py-0.5 rounded-md bg-white/10 text-white/80 uppercase">IMAGE</span>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <button id="lightbox-share" title="Share" class="p-1.5 hover:bg-white/10 rounded-md text-white/80 hover:text-white transition-colors">
+                        <i data-lucide="share-2" class="w-4 h-4"></i>
+                    </button>
+                    <button id="lightbox-download" title="Download" class="p-1.5 hover:bg-white/10 rounded-md text-white/80 hover:text-white transition-colors">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notion Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-notion-text dark:bg-notion-light text-notion-light dark:text-notion-text text-xs font-medium px-4 py-2.5 rounded-md shadow-xl flex items-center space-x-2 transform translate-y-16 opacity-0 transition-all duration-300 pointer-events-none">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 dark:text-emerald-600"></i>
+        <span id="toast-msg">Notification</span>
+    </div>
+
+    <!-- Logic Script -->
+    <script>
+        const REPO_OWNER = 'prakharrpatel';
+        const REPO_NAME = 'tripto-nainital-jimcorbett';
+        const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents`;
+
+        const IMAGE_EXTS = /\.(jpg|jpeg|png|webp|gif|svg)$/i;
+        const VIDEO_EXTS = /\.(mp4|webm|mov|m4v)$/i;
+
+        let mediaItems = [];
+        let filteredItems = [];
+        let activeFilter = 'all';
+        let searchQuery = '';
+        let currentView = 'grid';
+        let currentLightboxIndex = -1;
+
+        window.onload = () => {
+            lucide.createIcons();
+            initTheme();
+            setupEventListeners();
+            fetchRepoContents();
+        };
+
+        function initTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('theme-toggle').addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+            });
+
+            document.getElementById('sidebar-toggle').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.toggle('-ml-64');
+            });
+
+            document.getElementById('search-input').addEventListener('input', (e) => {
+                searchQuery = e.target.value.toLowerCase().trim();
+                applyFilters();
+            });
+
+            document.getElementById('refresh-btn').addEventListener('click', () => {
+                fetchRepoContents();
+            });
+
+            document.getElementById('clear-search').addEventListener('click', () => {
+                searchQuery = '';
+                document.getElementById('search-input').value = '';
+                activeFilter = 'all';
+                applyFilters();
+            });
+
+            document.getElementById('view-grid').addEventListener('click', () => setView('grid'));
+            document.getElementById('view-feed').addEventListener('click', () => setView('feed'));
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => {
+                        b.classList.remove('bg-notion-hover', 'dark:bg-notion-darkHover', 'text-notion-text', 'dark:text-notion-darkText');
+                        b.classList.add('text-notion-muted', 'dark:text-notion-darkMuted');
+                    });
+                    btn.classList.add('bg-notion-hover', 'dark:bg-notion-darkHover', 'text-notion-text', 'dark:text-notion-darkText');
+                    btn.classList.remove('text-notion-muted', 'dark:text-notion-darkMuted');
+
+                    activeFilter = btn.getAttribute('data-filter');
+                    applyFilters();
+                });
+            });
+
+            document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
+            document.getElementById('lightbox-prev').addEventListener('click', () => navigateLightbox(-1));
+            document.getElementById('lightbox-next').addEventListener('click', () => navigateLightbox(1));
+            
+            window.addEventListener('keydown', (e) => {
+                const lightbox = document.getElementById('lightbox');
+                if (!lightbox.classList.contains('hidden')) {
+                    if (e.key === 'Escape') closeLightbox();
+                    if (e.key === 'ArrowLeft') navigateLightbox(-1);
+                    if (e.key === 'ArrowRight') navigateLightbox(1);
+                }
+            });
+        }
+
+        async function fetchRepoContents(path = '') {
+            showLoader(true);
+            try {
+                const response = await fetch(`${API_URL}${path ? `/${path}` : ''}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                let fetchedMedia = [];
+
+                if (Array.isArray(data)) {
+                    for (const item of data) {
+                        if (item.type === 'file') {
+                            if (IMAGE_EXTS.test(item.name)) {
+                                fetchedMedia.push({
+                                    name: item.name,
+                                    path: item.path,
+                                    download_url: item.download_url,
+                                    type: 'image'
+                                });
+                            } else if (VIDEO_EXTS.test(item.name)) {
+                                fetchedMedia.push({
+                                    name: item.name,
+                                    path: item.path,
+                                    download_url: item.download_url,
+                                    type: 'video'
+                                });
+                            }
+                        } else if (item.type === 'dir') {
+                            const subItems = await fetchFolderContents(item.path);
+                            fetchedMedia = fetchedMedia.concat(subItems);
+                        }
+                    }
+                }
+
+                mediaItems = fetchedMedia;
+                updateCounts();
+                applyFilters();
+                updateLastSync();
+
+            } catch (err) {
+                console.warn('GitHub fetch warning:', err);
+                mediaItems = [];
+                updateCounts();
+                applyFilters();
+            } finally {
+                showLoader(false);
+            }
+        }
+
+        async function fetchFolderContents(folderPath) {
+            try {
+                const res = await fetch(`${API_URL}/${folderPath}`);
+                if (!res.ok) return [];
+                const data = await res.json();
+                let results = [];
+                if (Array.isArray(data)) {
+                    for (const item of data) {
+                        if (item.type === 'file') {
+                            if (IMAGE_EXTS.test(item.name)) {
+                                results.push({
+                                    name: item.name,
+                                    path: item.path,
+                                    download_url: item.download_url,
+                                    type: 'image'
+                                });
+                            } else if (VIDEO_EXTS.test(item.name)) {
+                                results.push({
+                                    name: item.name,
+                                    path: item.path,
+                                    download_url: item.download_url,
+                                    type: 'video'
+                                });
+                            }
+                        }
+                    }
+                }
+                return results;
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function applyFilters() {
+            filteredItems = mediaItems.filter(item => {
+                const matchesType = activeFilter === 'all' || 
+                    (activeFilter === 'images' && item.type === 'image') || 
+                    (activeFilter === 'videos' && item.type === 'video');
+
+                const matchesSearch = !searchQuery || item.name.toLowerCase().includes(searchQuery) || item.path.toLowerCase().includes(searchQuery);
+
+                return matchesType && matchesSearch;
+            });
+
+            renderGallery();
+        }
+
+        function renderGallery() {
+            const gridContainer = document.getElementById('gallery-grid');
+            const feedContainer = document.getElementById('gallery-feed');
+            const emptyState = document.getElementById('empty-state');
+
+            gridContainer.innerHTML = '';
+            feedContainer.innerHTML = '';
+
+            if (filteredItems.length === 0) {
+                emptyState.classList.remove('hidden');
+                gridContainer.classList.add('hidden');
+                feedContainer.classList.add('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            if (currentView === 'grid') {
+                gridContainer.classList.remove('hidden');
+                feedContainer.classList.add('hidden');
+
+                filteredItems.forEach((item, index) => {
+                    gridContainer.appendChild(createMediaCard(item, index));
+                });
+            } else {
+                feedContainer.classList.remove('hidden');
+                gridContainer.classList.add('hidden');
+
+                filteredItems.forEach((item, index) => {
+                    feedContainer.appendChild(createFeedCard(item, index));
+                });
+            }
+
+            lucide.createIcons();
+        }
+
+        /* Creates 1:1 Square Cards */
+        function createMediaCard(item, index) {
+            const card = document.createElement('div');
+            card.className = 'notion-card bg-notion-light dark:bg-notion-darkCard border border-notion-border dark:border-notion-darkBorder rounded-lg overflow-hidden flex flex-col group cursor-pointer';
+
+            // Square aspect-ratio 1/1 container
+            const mediaWrapper = document.createElement('div');
+            mediaWrapper.className = 'relative aspect-square w-full bg-notion-bg dark:bg-notion-darkBg overflow-hidden flex items-center justify-center';
+
+            if (item.type === 'image') {
+                const img = document.createElement('img');
+                img.src = item.download_url;
+                img.alt = item.name;
+                img.loading = 'lazy';
+                img.className = 'w-full h-full object-cover rounded-none transition-transform duration-300 group-hover:scale-105';
+                mediaWrapper.appendChild(img);
+            } else {
+                const video = document.createElement('video');
+                video.src = item.download_url;
+                video.muted = true;
+                video.loop = true;
+                video.className = 'w-full h-full object-cover rounded-none';
+                mediaWrapper.appendChild(video);
+
+                card.addEventListener('mouseenter', () => video.play().catch(() => {}));
+                card.addEventListener('mouseleave', () => { video.pause(); video.currentTime = 0; });
+
+                const playBadge = document.createElement('div');
+                playBadge.className = 'absolute bottom-2.5 right-2.5 p-1.5 bg-black/60 backdrop-blur-sm rounded-md text-white';
+                playBadge.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i>`;
+                mediaWrapper.appendChild(playBadge);
+            }
+
+            mediaWrapper.addEventListener('click', () => openLightbox(index));
+
+            const info = document.createElement('div');
+            info.className = 'p-3 flex items-center justify-between border-t border-notion-border dark:border-notion-darkBorder bg-notion-light dark:bg-notion-darkCard';
+
+            const title = document.createElement('span');
+            title.className = 'text-xs font-medium truncate max-w-[140px] text-notion-text dark:text-notion-darkText';
+            title.textContent = item.name;
+
+            const actions = document.createElement('div');
+            actions.className = 'flex items-center space-x-1 opacity-80 group-hover:opacity-100 transition-opacity';
+
+            const shareBtn = document.createElement('button');
+            shareBtn.className = 'p-1 hover:bg-notion-hover dark:hover:bg-notion-darkHover rounded-md text-notion-muted dark:text-notion-darkMuted hover:text-notion-text';
+            shareBtn.innerHTML = `<i data-lucide="share-2" class="w-3.5 h-3.5"></i>`;
+            shareBtn.onclick = (e) => {
+                e.stopPropagation();
+                shareMedia(item);
+            };
+
+            const downloadBtn = document.createElement('button');
+            downloadBtn.className = 'p-1 hover:bg-notion-hover dark:hover:bg-notion-darkHover rounded-md text-notion-muted dark:text-notion-darkMuted hover:text-notion-text';
+            downloadBtn.innerHTML = `<i data-lucide="download" class="w-3.5 h-3.5"></i>`;
+            downloadBtn.onclick = (e) => {
+                e.stopPropagation();
+                downloadFile(item.download_url, item.name);
+            };
+
+            actions.appendChild(shareBtn);
+            actions.appendChild(downloadBtn);
+
+            info.appendChild(title);
+            info.appendChild(actions);
+
+            card.appendChild(mediaWrapper);
+            card.appendChild(info);
+
+            return card;
+        }
+
+        function createFeedCard(item, index) {
+            const card = document.createElement('div');
+            card.className = 'bg-notion-light dark:bg-notion-darkCard border border-notion-border dark:border-notion-darkBorder rounded-lg overflow-hidden shadow-sm';
+
+            const header = document.createElement('div');
+            header.className = 'px-4 py-3 flex items-center justify-between border-b border-notion-border dark:border-notion-darkBorder';
+            header.innerHTML = `
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs font-semibold truncate max-w-xs">${item.name}</span>
+                </div>
+                <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-notion-bg dark:bg-notion-darkBg border border-notion-border dark:border-notion-darkBorder text-notion-muted">${item.type}</span>
+            `;
+
+            const mediaWrapper = document.createElement('div');
+            mediaWrapper.className = 'relative aspect-square w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden';
+
+            if (item.type === 'image') {
+                const img = document.createElement('img');
+                img.src = item.download_url;
+                img.alt = item.name;
+                img.className = 'w-full h-full object-cover';
+                mediaWrapper.appendChild(img);
+            } else {
+                const video = document.createElement('video');
+                video.src = item.download_url;
+                video.controls = true;
+                video.className = 'w-full h-full object-cover';
+                mediaWrapper.appendChild(video);
+            }
+
+            mediaWrapper.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'VIDEO') openLightbox(index);
+            });
+
+            const footer = document.createElement('div');
+            footer.className = 'p-3 px-4 flex items-center justify-between bg-notion-light dark:bg-notion-darkCard border-t border-notion-border dark:border-notion-darkBorder';
+            footer.innerHTML = `
+                <span class="text-xs text-notion-muted dark:text-notion-darkMuted truncate max-w-[200px]">${item.path}</span>
+                <div class="flex items-center space-x-2">
+                    <button class="flex items-center space-x-1 text-xs px-2.5 py-1 rounded-md bg-notion-bg dark:bg-notion-darkBg border border-notion-border dark:border-notion-darkBorder hover:bg-notion-hover dark:hover:bg-notion-darkHover" onclick="shareMedia({name: '${item.name}', download_url: '${item.download_url}'})">
+                        <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                        <span>Share</span>
+                    </button>
+                    <button class="flex items-center space-x-1 text-xs px-2.5 py-1 rounded-md bg-notion-text dark:bg-notion-light text-notion-light dark:text-notion-text hover:opacity-90" onclick="downloadFile('${item.download_url}', '${item.name}')">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                        <span>Download</span>
+                    </button>
+                </div>
+            `;
+
+            card.appendChild(header);
+            card.appendChild(mediaWrapper);
+            card.appendChild(footer);
+
+            return card;
+        }
+
+        function openLightbox(index) {
+            currentLightboxIndex = index;
+            const item = filteredItems[index];
+            if (!item) return;
+
+            const lightbox = document.getElementById('lightbox');
+            const mediaContainer = document.getElementById('lightbox-media-container');
+            const titleEl = document.getElementById('lightbox-title');
+            const badgeEl = document.getElementById('lightbox-badge');
+
+            mediaContainer.innerHTML = '';
+            titleEl.textContent = item.name;
+            badgeEl.textContent = item.type.toUpperCase();
+
+            if (item.type === 'image') {
+                const img = document.createElement('img');
+                img.src = item.download_url;
+                img.className = 'max-h-[75vh] max-w-full object-contain rounded-md shadow-2xl';
+                mediaContainer.appendChild(img);
+            } else {
+                const video = document.createElement('video');
+                video.src = item.download_url;
+                video.controls = true;
+                video.autoplay = true;
+                video.className = 'max-h-[75vh] max-w-full rounded-md shadow-2xl';
+                mediaContainer.appendChild(video);
+            }
+
+            document.getElementById('lightbox-share').onclick = () => shareMedia(item);
+            document.getElementById('lightbox-download').onclick = () => downloadFile(item.download_url, item.name);
+
+            lightbox.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            const mediaContainer = document.getElementById('lightbox-media-container');
+            mediaContainer.innerHTML = '';
+            lightbox.classList.add('hidden');
+        }
+
+        function navigateLightbox(direction) {
+            if (filteredItems.length === 0) return;
+            currentLightboxIndex = (currentLightboxIndex + direction + filteredItems.length) % filteredItems.length;
+            openLightbox(currentLightboxIndex);
+        }
+
+        async function downloadFile(url, fileName) {
+            showToast('Downloading file...');
+            try {
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = blobUrl;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(blobUrl);
+                showToast('Download started!');
+            } catch (err) {
+                window.open(url, '_blank');
+                showToast('Opened download link');
+            }
+        }
+
+        async function shareMedia(item) {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: item.name,
+                        url: item.download_url
+                    });
+                    showToast('Shared successfully!');
+                } catch (err) {
+                    copyToClipboard(item.download_url);
+                }
+            } else {
+                copyToClipboard(item.download_url);
+            }
+        }
+
+        function copyToClipboard(text) {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast('Link copied to clipboard!');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.textContent = message;
+
+            toast.classList.remove('translate-y-16', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-16', 'opacity-0');
+            }, 2500);
+        }
+
+        function setView(view) {
+            currentView = view;
+            const gridBtn = document.getElementById('view-grid');
+            const feedBtn = document.getElementById('view-feed');
+
+            if (view === 'grid') {
+                gridBtn.className = 'view-btn px-2.5 py-1 rounded-md bg-notion-light dark:bg-notion-darkCard shadow-xs text-notion-text dark:text-notion-darkText';
+                feedBtn.className = 'view-btn px-2.5 py-1 rounded-md text-notion-muted dark:text-notion-darkMuted hover:text-notion-text';
+            } else {
+                feedBtn.className = 'view-btn px-2.5 py-1 rounded-md bg-notion-light dark:bg-notion-darkCard shadow-xs text-notion-text dark:text-notion-darkText';
+                gridBtn.className = 'view-btn px-2.5 py-1 rounded-md text-notion-muted dark:text-notion-darkMuted hover:text-notion-text';
+            }
+
+            renderGallery();
+        }
+
+        function updateCounts() {
+            const allCount = mediaItems.length;
+            const imgCount = mediaItems.filter(i => i.type === 'image').length;
+            const videoCount = mediaItems.filter(i => i.type === 'video').length;
+
+            document.getElementById('count-all').textContent = allCount;
+            document.getElementById('count-images').textContent = imgCount;
+            document.getElementById('count-videos').textContent = videoCount;
+        }
+
+        function showLoader(show) {
+            const loader = document.getElementById('loader');
+            if (show) {
+                loader.classList.remove('hidden');
+            } else {
+                loader.classList.add('hidden');
+            }
+        }
+
+        function updateLastSync() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('last-sync-time').textContent = timeStr;
+        }
+    </script>
+</body>
+</html>
