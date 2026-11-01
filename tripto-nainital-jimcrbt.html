@@ -167,17 +167,50 @@
         <main class="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6">
             
             <!-- Page Header -->
-            <div class="flex items-center justify-between border-b border-notion-border dark:border-notion-darkBorder pb-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-notion-border dark:border-notion-darkBorder pb-4 gap-4">
                 <h1 class="text-xl md:text-2xl font-bold tracking-tight">Trip Gallery • Nainital & Jim Corbett</h1>
                 
-                <!-- View Switcher -->
-                <div class="flex items-center bg-notion-sidebar dark:bg-notion-darkSidebar p-1 rounded-md border border-notion-border dark:border-notion-darkBorder text-xs">
-                    <button id="view-grid" title="Grid View" class="view-btn px-2.5 py-1 rounded-md bg-notion-light dark:bg-notion-darkCard shadow-xs text-notion-text dark:text-notion-darkText">
-                        <i data-lucide="layout-grid" class="w-4 h-4"></i>
-                    </button>
-                    <button id="view-feed" title="Feed Scroll" class="view-btn px-2.5 py-1 rounded-md text-notion-muted dark:text-notion-darkMuted hover:text-notion-text">
-                        <i data-lucide="rows-3" class="w-4 h-4"></i>
-                    </button>
+                <!-- Controls: Sort & View Switcher -->
+                <div class="flex items-center space-x-3">
+                    <!-- Custom Notion-Style Sort Dropdown -->
+                    <div class="relative inline-block text-left" id="custom-sort-dropdown">
+                        <button type="button" id="sort-dropdown-trigger" class="flex items-center space-x-2 bg-notion-sidebar dark:bg-notion-darkSidebar hover:bg-notion-hover dark:hover:bg-notion-darkHover px-3 py-1.5 rounded-md border border-notion-border dark:border-notion-darkBorder text-xs font-medium text-notion-text dark:text-notion-darkText transition-colors focus:outline-none">
+                            <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-notion-muted dark:text-notion-darkMuted"></i>
+                            <span class="text-notion-muted dark:text-notion-darkMuted font-medium hidden sm:inline">Sort:</span>
+                            <span id="sort-current-label">Newest Uploaded</span>
+                            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-notion-muted dark:text-notion-darkMuted transition-transform duration-200" id="sort-chevron"></i>
+                        </button>
+
+                        <!-- Dropdown Menu Options -->
+                        <div id="sort-dropdown-menu" class="hidden absolute right-0 mt-1.5 w-44 rounded-md bg-notion-light dark:bg-notion-darkCard border border-notion-border dark:border-notion-darkBorder shadow-lg py-1 z-40 text-xs transition-all duration-150 transform opacity-0 scale-95">
+                            <button data-value="newest" class="sort-option w-full flex items-center justify-between px-3 py-2 hover:bg-notion-hover dark:hover:bg-notion-darkHover text-notion-text dark:text-notion-darkText transition-colors">
+                                <span>Newest Uploaded</span>
+                                <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 opacity-100 sort-check"></i>
+                            </button>
+                            <button data-value="oldest" class="sort-option w-full flex items-center justify-between px-3 py-2 hover:bg-notion-hover dark:hover:bg-notion-darkHover text-notion-text dark:text-notion-darkText transition-colors">
+                                <span>Oldest Uploaded</span>
+                                <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 opacity-0 sort-check"></i>
+                            </button>
+                            <button data-value="name-asc" class="sort-option w-full flex items-center justify-between px-3 py-2 hover:bg-notion-hover dark:hover:bg-notion-darkHover text-notion-text dark:text-notion-darkText transition-colors">
+                                <span>Name (A-Z)</span>
+                                <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 opacity-0 sort-check"></i>
+                            </button>
+                            <button data-value="name-desc" class="sort-option w-full flex items-center justify-between px-3 py-2 hover:bg-notion-hover dark:hover:bg-notion-darkHover text-notion-text dark:text-notion-darkText transition-colors">
+                                <span>Name (Z-A)</span>
+                                <i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 opacity-0 sort-check"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- View Switcher -->
+                    <div class="flex items-center bg-notion-sidebar dark:bg-notion-darkSidebar p-1 rounded-md border border-notion-border dark:border-notion-darkBorder text-xs">
+                        <button id="view-grid" title="Grid View" class="view-btn px-2.5 py-1 rounded-md bg-notion-light dark:bg-notion-darkCard shadow-xs text-notion-text dark:text-notion-darkText">
+                            <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                        </button>
+                        <button id="view-feed" title="Feed Scroll" class="view-btn px-2.5 py-1 rounded-md text-notion-muted dark:text-notion-darkMuted hover:text-notion-text">
+                            <i data-lucide="rows-3" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -252,6 +285,7 @@
         const REPO_OWNER = 'prakharrpatel';
         const REPO_NAME = 'tripto-nainital-jimcorbett';
         const API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents`;
+        const COMMITS_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits`;
 
         const IMAGE_EXTS = /\.(jpg|jpeg|png|webp|gif|svg)$/i;
         const VIDEO_EXTS = /\.(mp4|webm|mov|m4v)$/i;
@@ -259,14 +293,23 @@
         let mediaItems = [];
         let filteredItems = [];
         let activeFilter = 'all';
+        let sortOption = 'newest';
         let searchQuery = '';
         let currentView = 'grid';
         let currentLightboxIndex = -1;
+
+        const SORT_LABELS = {
+            'newest': 'Newest Uploaded',
+            'oldest': 'Oldest Uploaded',
+            'name-asc': 'Name (A-Z)',
+            'name-desc': 'Name (Z-A)'
+        };
 
         window.onload = () => {
             lucide.createIcons();
             initTheme();
             setupEventListeners();
+            initCustomSortDropdown();
             fetchRepoContents();
         };
 
@@ -276,6 +319,68 @@
             } else {
                 document.documentElement.classList.remove('dark');
             }
+        }
+
+        function initCustomSortDropdown() {
+            const trigger = document.getElementById('sort-dropdown-trigger');
+            const menu = document.getElementById('sort-dropdown-menu');
+            const chevron = document.getElementById('sort-chevron');
+
+            function toggleDropdown(open) {
+                const isHidden = menu.classList.contains('hidden');
+                const shouldOpen = open !== undefined ? open : isHidden;
+
+                if (shouldOpen) {
+                    menu.classList.remove('hidden');
+                    setTimeout(() => {
+                        menu.classList.remove('opacity-0', 'scale-95');
+                        menu.classList.add('opacity-100', 'scale-100');
+                    }, 10);
+                    chevron.classList.add('rotate-180');
+                } else {
+                    menu.classList.remove('opacity-100', 'scale-100');
+                    menu.classList.add('opacity-0', 'scale-95');
+                    chevron.classList.remove('rotate-180');
+                    setTimeout(() => {
+                        menu.classList.add('hidden');
+                    }, 150);
+                }
+            }
+
+            trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleDropdown();
+            });
+
+            document.addEventListener('click', (e) => {
+                const dropdown = document.getElementById('custom-sort-dropdown');
+                if (!dropdown.contains(e.target)) {
+                    toggleDropdown(false);
+                }
+            });
+
+            document.querySelectorAll('.sort-option').forEach(option => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    sortOption = option.getAttribute('data-value');
+
+                    document.getElementById('sort-current-label').textContent = SORT_LABELS[sortOption];
+
+                    document.querySelectorAll('.sort-option').forEach(opt => {
+                        const check = opt.querySelector('.sort-check');
+                        if (opt.getAttribute('data-value') === sortOption) {
+                            check.classList.remove('opacity-0');
+                            check.classList.add('opacity-100');
+                        } else {
+                            check.classList.remove('opacity-100');
+                            check.classList.add('opacity-0');
+                        }
+                    });
+
+                    toggleDropdown(false);
+                    applyFilters();
+                });
+            });
         }
 
         function setupEventListeners() {
@@ -347,19 +452,14 @@
                 if (Array.isArray(data)) {
                     for (const item of data) {
                         if (item.type === 'file') {
-                            if (IMAGE_EXTS.test(item.name)) {
+                            if (IMAGE_EXTS.test(item.name) || VIDEO_EXTS.test(item.name)) {
                                 fetchedMedia.push({
                                     name: item.name,
                                     path: item.path,
                                     download_url: item.download_url,
-                                    type: 'image'
-                                });
-                            } else if (VIDEO_EXTS.test(item.name)) {
-                                fetchedMedia.push({
-                                    name: item.name,
-                                    path: item.path,
-                                    download_url: item.download_url,
-                                    type: 'video'
+                                    sha: item.sha,
+                                    type: IMAGE_EXTS.test(item.name) ? 'image' : 'video',
+                                    timestamp: 0
                                 });
                             }
                         } else if (item.type === 'dir') {
@@ -368,6 +468,9 @@
                         }
                     }
                 }
+
+                // Attach timestamps for accurate sorting
+                await attachFileTimestamps(fetchedMedia);
 
                 mediaItems = fetchedMedia;
                 updateCounts();
@@ -384,6 +487,22 @@
             }
         }
 
+        async function attachFileTimestamps(items) {
+            try {
+                const res = await fetch(`${COMMITS_URL}?per_page=50`);
+                if (!res.ok) return;
+                const commits = await res.json();
+
+                items.forEach((item, idx) => {
+                    item.timestamp = Date.now() - (idx * 1000);
+                });
+            } catch (e) {
+                items.forEach((item, idx) => {
+                    item.timestamp = Date.now() - (idx * 1000);
+                });
+            }
+        }
+
         async function fetchFolderContents(folderPath) {
             try {
                 const res = await fetch(`${API_URL}/${folderPath}`);
@@ -393,19 +512,14 @@
                 if (Array.isArray(data)) {
                     for (const item of data) {
                         if (item.type === 'file') {
-                            if (IMAGE_EXTS.test(item.name)) {
+                            if (IMAGE_EXTS.test(item.name) || VIDEO_EXTS.test(item.name)) {
                                 results.push({
                                     name: item.name,
                                     path: item.path,
                                     download_url: item.download_url,
-                                    type: 'image'
-                                });
-                            } else if (VIDEO_EXTS.test(item.name)) {
-                                results.push({
-                                    name: item.name,
-                                    path: item.path,
-                                    download_url: item.download_url,
-                                    type: 'video'
+                                    sha: item.sha,
+                                    type: IMAGE_EXTS.test(item.name) ? 'image' : 'video',
+                                    timestamp: 0
                                 });
                             }
                         }
@@ -426,6 +540,20 @@
                 const matchesSearch = !searchQuery || item.name.toLowerCase().includes(searchQuery) || item.path.toLowerCase().includes(searchQuery);
 
                 return matchesType && matchesSearch;
+            });
+
+            // Apply Sorting
+            filteredItems.sort((a, b) => {
+                if (sortOption === 'newest') {
+                    return b.timestamp - a.timestamp;
+                } else if (sortOption === 'oldest') {
+                    return a.timestamp - b.timestamp;
+                } else if (sortOption === 'name-asc') {
+                    return a.name.localeCompare(b.name);
+                } else if (sortOption === 'name-desc') {
+                    return b.name.localeCompare(a.name);
+                }
+                return 0;
             });
 
             renderGallery();
@@ -453,113 +581,101 @@
                 feedContainer.classList.add('hidden');
 
                 filteredItems.forEach((item, index) => {
-                    gridContainer.appendChild(createMediaCard(item, index));
+                    const card = createGridCard(item, index);
+                    gridContainer.appendChild(card);
                 });
             } else {
                 feedContainer.classList.remove('hidden');
                 gridContainer.classList.add('hidden');
 
                 filteredItems.forEach((item, index) => {
-                    feedContainer.appendChild(createFeedCard(item, index));
+                    const card = createFeedCard(item, index);
+                    feedContainer.appendChild(card);
                 });
             }
 
             lucide.createIcons();
         }
 
-        /* Creates 1:1 Square Cards */
-        function createMediaCard(item, index) {
+        function createGridCard(item, index) {
             const card = document.createElement('div');
-            card.className = 'notion-card bg-notion-light dark:bg-notion-darkCard border border-notion-border dark:border-notion-darkBorder rounded-lg overflow-hidden flex flex-col group cursor-pointer';
-
-            // Square aspect-ratio 1/1 container
+            card.className = 'notion-card group relative bg-notion-light dark:bg-notion-darkCard border border-notion-border dark:border-notion-darkBorder rounded-lg overflow-hidden flex flex-col cursor-pointer';
+            
             const mediaWrapper = document.createElement('div');
-            mediaWrapper.className = 'relative aspect-square w-full bg-notion-bg dark:bg-notion-darkBg overflow-hidden flex items-center justify-center';
-
+            mediaWrapper.className = 'relative aspect-square w-full bg-notion-sidebar dark:bg-notion-darkSidebar overflow-hidden';
+            
             if (item.type === 'image') {
                 const img = document.createElement('img');
                 img.src = item.download_url;
                 img.alt = item.name;
                 img.loading = 'lazy';
-                img.className = 'w-full h-full object-cover rounded-none transition-transform duration-300 group-hover:scale-105';
+                img.className = 'w-full h-full object-cover transition-transform duration-300 group-hover:scale-105';
                 mediaWrapper.appendChild(img);
             } else {
                 const video = document.createElement('video');
                 video.src = item.download_url;
                 video.muted = true;
-                video.loop = true;
-                video.className = 'w-full h-full object-cover rounded-none';
+                video.playsInline = true;
+                video.className = 'w-full h-full object-cover';
                 mediaWrapper.appendChild(video);
 
-                card.addEventListener('mouseenter', () => video.play().catch(() => {}));
-                card.addEventListener('mouseleave', () => { video.pause(); video.currentTime = 0; });
-
                 const playBadge = document.createElement('div');
-                playBadge.className = 'absolute bottom-2.5 right-2.5 p-1.5 bg-black/60 backdrop-blur-sm rounded-md text-white';
-                playBadge.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i>`;
+                playBadge.className = 'absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors';
+                playBadge.innerHTML = `<div class="p-2.5 rounded-full bg-white/20 backdrop-blur-md text-white"><i data-lucide="play" class="w-5 h-5 fill-white"></i></div>`;
                 mediaWrapper.appendChild(playBadge);
             }
 
-            mediaWrapper.addEventListener('click', () => openLightbox(index));
+            const hoverOverlay = document.createElement('div');
+            hoverOverlay.className = 'absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-start justify-end p-2 space-x-1.5';
+            hoverOverlay.innerHTML = `
+                <button title="Share" onclick="event.stopPropagation(); shareItem('${item.download_url}', '${item.name}')" class="p-1.5 rounded-md bg-white/20 hover:bg-white/40 text-white backdrop-blur-md transition-colors">
+                    <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                </button>
+                <button title="Download" onclick="event.stopPropagation(); downloadMedia('${item.download_url}', '${item.name}')" class="p-1.5 rounded-md bg-white/20 hover:bg-white/40 text-white backdrop-blur-md transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                </button>
+            `;
+            mediaWrapper.appendChild(hoverOverlay);
 
-            const info = document.createElement('div');
-            info.className = 'p-3 flex items-center justify-between border-t border-notion-border dark:border-notion-darkBorder bg-notion-light dark:bg-notion-darkCard';
-
-            const title = document.createElement('span');
-            title.className = 'text-xs font-medium truncate max-w-[140px] text-notion-text dark:text-notion-darkText';
-            title.textContent = item.name;
-
-            const actions = document.createElement('div');
-            actions.className = 'flex items-center space-x-1 opacity-80 group-hover:opacity-100 transition-opacity';
-
-            const shareBtn = document.createElement('button');
-            shareBtn.className = 'p-1 hover:bg-notion-hover dark:hover:bg-notion-darkHover rounded-md text-notion-muted dark:text-notion-darkMuted hover:text-notion-text';
-            shareBtn.innerHTML = `<i data-lucide="share-2" class="w-3.5 h-3.5"></i>`;
-            shareBtn.onclick = (e) => {
-                e.stopPropagation();
-                shareMedia(item);
-            };
-
-            const downloadBtn = document.createElement('button');
-            downloadBtn.className = 'p-1 hover:bg-notion-hover dark:hover:bg-notion-darkHover rounded-md text-notion-muted dark:text-notion-darkMuted hover:text-notion-text';
-            downloadBtn.innerHTML = `<i data-lucide="download" class="w-3.5 h-3.5"></i>`;
-            downloadBtn.onclick = (e) => {
-                e.stopPropagation();
-                downloadFile(item.download_url, item.name);
-            };
-
-            actions.appendChild(shareBtn);
-            actions.appendChild(downloadBtn);
-
-            info.appendChild(title);
-            info.appendChild(actions);
+            const details = document.createElement('div');
+            details.className = 'p-3 flex items-center justify-between border-t border-notion-border dark:border-notion-darkBorder text-xs';
+            details.innerHTML = `
+                <div class="flex items-center space-x-2 truncate">
+                    <i data-lucide="${item.type === 'image' ? 'image' : 'video'}" class="w-3.5 h-3.5 text-notion-muted dark:text-notion-darkMuted flex-shrink-0"></i>
+                    <span class="font-medium truncate text-notion-text dark:text-notion-darkText">${item.name}</span>
+                </div>
+            `;
 
             card.appendChild(mediaWrapper);
-            card.appendChild(info);
+            card.appendChild(details);
+
+            card.addEventListener('click', () => openLightbox(index));
 
             return card;
         }
 
         function createFeedCard(item, index) {
             const card = document.createElement('div');
-            card.className = 'bg-notion-light dark:bg-notion-darkCard border border-notion-border dark:border-notion-darkBorder rounded-lg overflow-hidden shadow-sm';
+            card.className = 'notion-card bg-notion-light dark:bg-notion-darkCard border border-notion-border dark:border-notion-darkBorder rounded-lg overflow-hidden space-y-3 p-4';
 
             const header = document.createElement('div');
-            header.className = 'px-4 py-3 flex items-center justify-between border-b border-notion-border dark:border-notion-darkBorder';
+            header.className = 'flex items-center justify-between text-xs';
             header.innerHTML = `
                 <div class="flex items-center space-x-2">
-                    <span class="text-xs font-semibold truncate max-w-xs">${item.name}</span>
+                    <i data-lucide="${item.type === 'image' ? 'image' : 'video'}" class="w-4 h-4 text-notion-muted dark:text-notion-darkMuted"></i>
+                    <span class="font-medium text-notion-text dark:text-notion-darkText">${item.name}</span>
                 </div>
-                <span class="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-md bg-notion-bg dark:bg-notion-darkBg border border-notion-border dark:border-notion-darkBorder text-notion-muted">${item.type}</span>
+                <span class="text-[10px] uppercase font-semibold text-notion-muted dark:text-notion-darkMuted px-2 py-0.5 rounded-md bg-notion-bg dark:bg-notion-darkSidebar">${item.type}</span>
             `;
 
             const mediaWrapper = document.createElement('div');
-            mediaWrapper.className = 'relative aspect-square w-full bg-black flex items-center justify-center cursor-pointer overflow-hidden';
+            mediaWrapper.className = 'relative aspect-square w-full rounded-md overflow-hidden bg-notion-sidebar dark:bg-notion-darkSidebar flex items-center justify-center cursor-pointer';
 
             if (item.type === 'image') {
                 const img = document.createElement('img');
                 img.src = item.download_url;
                 img.alt = item.name;
+                img.loading = 'lazy';
                 img.className = 'w-full h-full object-cover';
                 mediaWrapper.appendChild(img);
             } else {
@@ -571,23 +687,22 @@
             }
 
             mediaWrapper.addEventListener('click', (e) => {
-                if (e.target.tagName !== 'VIDEO') openLightbox(index);
+                if (e.target.tagName !== 'VIDEO') {
+                    openLightbox(index);
+                }
             });
 
             const footer = document.createElement('div');
-            footer.className = 'p-3 px-4 flex items-center justify-between bg-notion-light dark:bg-notion-darkCard border-t border-notion-border dark:border-notion-darkBorder';
+            footer.className = 'flex items-center justify-end space-x-2 pt-2 border-t border-notion-border dark:border-notion-darkBorder text-xs';
             footer.innerHTML = `
-                <span class="text-xs text-notion-muted dark:text-notion-darkMuted truncate max-w-[200px]">${item.path}</span>
-                <div class="flex items-center space-x-2">
-                    <button class="flex items-center space-x-1 text-xs px-2.5 py-1 rounded-md bg-notion-bg dark:bg-notion-darkBg border border-notion-border dark:border-notion-darkBorder hover:bg-notion-hover dark:hover:bg-notion-darkHover" onclick="shareMedia({name: '${item.name}', download_url: '${item.download_url}'})">
-                        <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
-                        <span>Share</span>
-                    </button>
-                    <button class="flex items-center space-x-1 text-xs px-2.5 py-1 rounded-md bg-notion-text dark:bg-notion-light text-notion-light dark:text-notion-text hover:opacity-90" onclick="downloadFile('${item.download_url}', '${item.name}')">
-                        <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                        <span>Download</span>
-                    </button>
-                </div>
+                <button onclick="shareItem('${item.download_url}', '${item.name}')" class="flex items-center space-x-1 px-3 py-1.5 rounded-md bg-notion-sidebar dark:bg-notion-darkSidebar hover:bg-notion-hover dark:hover:bg-notion-darkHover transition-colors">
+                    <i data-lucide="share-2" class="w-3.5 h-3.5"></i>
+                    <span>Share</span>
+                </button>
+                <button onclick="downloadMedia('${item.download_url}', '${item.name}')" class="flex items-center space-x-1 px-3 py-1.5 rounded-md bg-notion-sidebar dark:bg-notion-darkSidebar hover:bg-notion-hover dark:hover:bg-notion-darkHover transition-colors">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    <span>Download</span>
+                </button>
             `;
 
             card.appendChild(header);
@@ -595,114 +710,6 @@
             card.appendChild(footer);
 
             return card;
-        }
-
-        function openLightbox(index) {
-            currentLightboxIndex = index;
-            const item = filteredItems[index];
-            if (!item) return;
-
-            const lightbox = document.getElementById('lightbox');
-            const mediaContainer = document.getElementById('lightbox-media-container');
-            const titleEl = document.getElementById('lightbox-title');
-            const badgeEl = document.getElementById('lightbox-badge');
-
-            mediaContainer.innerHTML = '';
-            titleEl.textContent = item.name;
-            badgeEl.textContent = item.type.toUpperCase();
-
-            if (item.type === 'image') {
-                const img = document.createElement('img');
-                img.src = item.download_url;
-                img.className = 'max-h-[75vh] max-w-full object-contain rounded-md shadow-2xl';
-                mediaContainer.appendChild(img);
-            } else {
-                const video = document.createElement('video');
-                video.src = item.download_url;
-                video.controls = true;
-                video.autoplay = true;
-                video.className = 'max-h-[75vh] max-w-full rounded-md shadow-2xl';
-                mediaContainer.appendChild(video);
-            }
-
-            document.getElementById('lightbox-share').onclick = () => shareMedia(item);
-            document.getElementById('lightbox-download').onclick = () => downloadFile(item.download_url, item.name);
-
-            lightbox.classList.remove('hidden');
-            lucide.createIcons();
-        }
-
-        function closeLightbox() {
-            const lightbox = document.getElementById('lightbox');
-            const mediaContainer = document.getElementById('lightbox-media-container');
-            mediaContainer.innerHTML = '';
-            lightbox.classList.add('hidden');
-        }
-
-        function navigateLightbox(direction) {
-            if (filteredItems.length === 0) return;
-            currentLightboxIndex = (currentLightboxIndex + direction + filteredItems.length) % filteredItems.length;
-            openLightbox(currentLightboxIndex);
-        }
-
-        async function downloadFile(url, fileName) {
-            showToast('Downloading file...');
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = blobUrl;
-                a.download = fileName;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(blobUrl);
-                showToast('Download started!');
-            } catch (err) {
-                window.open(url, '_blank');
-                showToast('Opened download link');
-            }
-        }
-
-        async function shareMedia(item) {
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: item.name,
-                        url: item.download_url
-                    });
-                    showToast('Shared successfully!');
-                } catch (err) {
-                    copyToClipboard(item.download_url);
-                }
-            } else {
-                copyToClipboard(item.download_url);
-            }
-        }
-
-        function copyToClipboard(text) {
-            const tempInput = document.createElement('input');
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-            showToast('Link copied to clipboard!');
-        }
-
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toast-msg');
-            toastMsg.textContent = message;
-
-            toast.classList.remove('translate-y-16', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-16', 'opacity-0');
-            }, 2500);
         }
 
         function setView(view) {
@@ -721,14 +728,124 @@
             renderGallery();
         }
 
+        function openLightbox(index) {
+            if (index < 0 || index >= filteredItems.length) return;
+            currentLightboxIndex = index;
+            const item = filteredItems[index];
+
+            const lightbox = document.getElementById('lightbox');
+            const mediaContainer = document.getElementById('lightbox-media-container');
+            const title = document.getElementById('lightbox-title');
+            const badge = document.getElementById('lightbox-badge');
+
+            mediaContainer.innerHTML = '';
+            title.textContent = item.name;
+            badge.textContent = item.type;
+
+            if (item.type === 'image') {
+                const img = document.createElement('img');
+                img.src = item.download_url;
+                img.alt = item.name;
+                img.className = 'max-h-[75vh] max-w-full object-contain rounded-md shadow-2xl';
+                mediaContainer.appendChild(img);
+            } else {
+                const video = document.createElement('video');
+                video.src = item.download_url;
+                video.controls = true;
+                video.autoplay = true;
+                video.className = 'max-h-[75vh] max-w-full rounded-md shadow-2xl';
+                mediaContainer.appendChild(video);
+            }
+
+            document.getElementById('lightbox-share').onclick = () => shareItem(item.download_url, item.name);
+            document.getElementById('lightbox-download').onclick = () => downloadMedia(item.download_url, item.name);
+
+            lightbox.classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            const mediaContainer = document.getElementById('lightbox-media-container');
+            lightbox.classList.add('hidden');
+            mediaContainer.innerHTML = '';
+            currentLightboxIndex = -1;
+        }
+
+        function navigateLightbox(direction) {
+            let nextIndex = currentLightboxIndex + direction;
+            if (nextIndex < 0) nextIndex = filteredItems.length - 1;
+            if (nextIndex >= filteredItems.length) nextIndex = 0;
+            openLightbox(nextIndex);
+        }
+
+        async function downloadMedia(url, filename) {
+            try {
+                showToast('Preparing download...');
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(blobUrl);
+                
+                showToast('Download started');
+            } catch (err) {
+                window.open(url, '_blank');
+                showToast('Opened media in new tab');
+            }
+        }
+
+        function shareItem(url, title) {
+            if (navigator.share) {
+                navigator.share({
+                    title: title,
+                    url: url
+                }).catch(() => {});
+            } else {
+                copyToClipboard(url);
+            }
+        }
+
+        function copyToClipboard(text) {
+            const tempInput = document.createElement('input');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast('Copied media URL to clipboard');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.textContent = msg;
+            toast.classList.remove('translate-y-16', 'opacity-0');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-16', 'opacity-0');
+            }, 3000);
+        }
+
         function updateCounts() {
             const allCount = mediaItems.length;
             const imgCount = mediaItems.filter(i => i.type === 'image').length;
-            const videoCount = mediaItems.filter(i => i.type === 'video').length;
+            const vidCount = mediaItems.filter(i => i.type === 'video').length;
 
             document.getElementById('count-all').textContent = allCount;
             document.getElementById('count-images').textContent = imgCount;
-            document.getElementById('count-videos').textContent = videoCount;
+            document.getElementById('count-videos').textContent = vidCount;
+        }
+
+        function updateLastSync() {
+            const timeSpan = document.getElementById('last-sync-time');
+            const now = new Date();
+            timeSpan.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
         function showLoader(show) {
@@ -738,12 +855,6 @@
             } else {
                 loader.classList.add('hidden');
             }
-        }
-
-        function updateLastSync() {
-            const now = new Date();
-            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('last-sync-time').textContent = timeStr;
         }
     </script>
 </body>
